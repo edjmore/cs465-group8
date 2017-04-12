@@ -1,27 +1,37 @@
 package proto.group8.cs465.groceryhelper;
 
-import android.support.design.widget.TabLayout;
+import android.app.SearchManager;
+import android.net.Uri;
+import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-
+import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.MenuItemCompat;
+import android.support.v4.view.ViewGroupCompat;
 import android.support.v4.view.ViewPager;
-import android.os.Bundle;
-import android.view.LayoutInflater;
+import android.support.v7.widget.SearchView;
+import android.util.Log;
+import android.view.View;
+import android.support.design.widget.NavigationView;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.View;
 import android.view.ViewGroup;
 
-import android.widget.TextView;
+import java.util.List;
 
 import proto.group8.cs465.groceryhelper.model.Item;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity
+        implements NavigationView.OnNavigationItemSelectedListener,
+                    ItemFragment.OnListFragmentInteractionListener,
+                    MapFragment.OnFragmentInteractionListener {
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -37,15 +47,14 @@ public class MainActivity extends AppCompatActivity {
      * The {@link ViewPager} that will host the section contents.
      */
     private ViewPager mViewPager;
-    private int mPosition;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
@@ -54,24 +63,92 @@ public class MainActivity extends AppCompatActivity {
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
 
-        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
-        tabLayout.setupWithViewPager(mViewPager);
+        // fab measurements used in translation
+        final FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        final ViewGroup.MarginLayoutParams fabLp = (ViewGroup.MarginLayoutParams) fab.getLayoutParams();
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
+        mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
-            public void onClick(View view) {
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                // translate the fab a proportional amount on/off screen
+                int width = getWindowManager().getDefaultDisplay().getWidth();
+                float totalDxToOffscreen =
+                        width - (fab.getX() - fab.getTranslationX()) + fab.getWidth() / 2 + fabLp.rightMargin / 2;
+                float translationX;
+                if (position == 1) {
+                    translationX = totalDxToOffscreen * positionOffset; // moving offscreen
+                } else {
+                    translationX = totalDxToOffscreen * (1f - positionOffset); // moving back onscreen
+                }
+                fab.setTranslationX(translationX);
+            }
+
+            @Override
+            public void onPageSelected(int position) {
+                // refresh the list pages every time
+                if (position != 2) {
+                    ItemFragment listFragment = (ItemFragment) getCurrentFragment();
+                    listFragment.refresh();
+                }
+            }
+
+            @Override
+            public void onPageScrollStateChanged(int state) {
 
             }
         });
 
+        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
+        tabLayout.setupWithViewPager(mViewPager);
+
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Fragment currFragment = getCurrentFragment();
+                if (currFragment instanceof ItemFragment && mViewPager.getCurrentItem() == 1) {
+                    ItemFragment itemFragment = (ItemFragment) currFragment;
+                    if (!itemFragment.hasBlankItem()) {
+                        itemFragment.addBlankItem();
+                    }
+                }
+            }
+        });
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.setDrawerListener(toggle);
+        toggle.syncState();
+
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
     }
 
+    @Override
+    public void onBackPressed() {
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        getMenuInflater().inflate(R.menu.main, menu);
+
+        SearchManager searchManager = (SearchManager) getSystemService(SEARCH_SERVICE);
+        MenuItem searchItem = menu.findItem(R.id.search);
+        Log.e("MainActivity", "searchItem: " + searchItem);
+        SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
+        if (searchView != null) {
+            searchView.setSearchableInfo(
+                    searchManager.getSearchableInfo(getComponentName()));
+        } else {
+            Log.e("MainActivity", "SearchView is null!");
+        }
         return true;
     }
 
@@ -82,47 +159,69 @@ public class MainActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
         return super.onOptionsItemSelected(item);
     }
 
-    /**
-     * A placeholder fragment containing a simple view.
-     */
-    public static class PlaceholderFragment extends Fragment {
-        /**
-         * The fragment argument representing the section number for this
-         * fragment.
-         */
-        private static final String ARG_SECTION_NUMBER = "section_number";
+    @SuppressWarnings("StatementWithEmptyBody")
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) {
+        // Handle navigation view item clicks here.
+        int id = item.getItemId();
 
-        public PlaceholderFragment() {
+        if (id == R.id.nav_camera) {
+            // Handle the camera action
+        } else if (id == R.id.nav_gallery) {
+
+        } else if (id == R.id.nav_slideshow) {
+
+        } else if (id == R.id.nav_manage) {
+
+        } else if (id == R.id.nav_share) {
+
+        } else if (id == R.id.nav_send) {
+
         }
 
-        /**
-         * Returns a new instance of this fragment for the given section
-         * number.
-         */
-        public static PlaceholderFragment newInstance(int sectionNumber) {
-            PlaceholderFragment fragment = new PlaceholderFragment();
-            Bundle args = new Bundle();
-            args.putInt(ARG_SECTION_NUMBER, sectionNumber);
-            fragment.setArguments(args);
-            return fragment;
-        }
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+        return true;
+    }
 
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                                 Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_main, container, false);
-            TextView textView = (TextView) rootView.findViewById(R.id.section_label);
-            textView.setText(getString(R.string.section_format, getArguments().getInt(ARG_SECTION_NUMBER)));
-            return rootView;
+    @Override
+    public void onListFragmentInteraction(Item item) {
+
+    }
+
+    @Override
+    public void onListItemFinalized() {
+        // user has finished editing a new item...
+        // ...so we add a new blank item to the bottom of the list
+        Fragment currFragment = getCurrentFragment();
+        if (currFragment instanceof ItemFragment) {
+            ItemFragment itemFragment = (ItemFragment) currFragment;
+            itemFragment.addBlankItem();
         }
+    }
+
+    @Override
+    public void onListItemFavoriteToggled(Item item) {
+        // update the favorites list
+        List<Item> favoritesList = ((MyApplication) getApplication()).getFavoriteItemsList();
+        if (item.isFavorited()) {
+            favoritesList.add(item);
+        } else {
+            favoritesList.remove(item);
+        }
+    }
+
+    @Override
+    public void onFragmentInteraction(Uri uri) {
+
+    }
+
+    private Fragment getCurrentFragment() {
+        return getSupportFragmentManager()
+                .findFragmentByTag("android:switcher:" + R.id.container + ":" + mViewPager.getCurrentItem());
     }
 
     /**
@@ -138,8 +237,15 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
-            // Return a PlaceholderFragment (defined as a static inner class below).
-            return PlaceholderFragment.newInstance(position + 1);
+            switch (position) {
+                case 0:
+                    return ItemFragment.newInstance(1, ItemFragment.TYPE_FAVORITES_LIST);
+                case 1:
+                    return ItemFragment.newInstance(1, ItemFragment.TYPE_LIST);
+                case 2:
+                default:
+                    return MapFragment.newInstance("Map", "Fragment");
+            }
         }
 
         @Override
@@ -160,5 +266,7 @@ public class MainActivity extends AppCompatActivity {
             }
             return null;
         }
+
+
     }
 }

@@ -7,13 +7,17 @@ package proto.group8.cs465.groceryhelper.model;
 public class Item {
 
     private String mName;
+    private boolean mIsFavorited;
+    private boolean mIsInCart;
 
-    public Item(String name) {
+    public Item(String name, boolean isFavorited, boolean isInCart) {
         mName = name;
+        mIsFavorited = isFavorited;
+        mIsInCart = isInCart;
     }
 
-    public static Item blank() {
-        return new Item(null);
+    public static Item blank(boolean isFavorited) {
+        return new Item(null, isFavorited, false);
     }
 
     public boolean isBlank() {
@@ -24,7 +28,23 @@ public class Item {
         return mName;
     }
 
+    public boolean isFavorited() {
+        return mIsFavorited;
+    }
+
+    public boolean isInCart() {
+        return mIsInCart;
+    }
+
     public void setName(String name) {
         mName = name;
+    }
+
+    public void setIsFavorited(boolean isFavorited) {
+        mIsFavorited = isFavorited;
+    }
+
+    public void setIsInCart(boolean isInCart) {
+        mIsInCart = isInCart;
     }
 }

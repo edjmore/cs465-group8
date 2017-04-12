@@ -10,9 +10,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 
-import proto.group8.cs465.groceryhelper.dummy.DummyContent;
-import proto.group8.cs465.groceryhelper.dummy.DummyContent.DummyItem;
 import proto.group8.cs465.groceryhelper.model.Item;
 
 import java.util.List;
@@ -122,8 +121,14 @@ public class ItemFragment extends Fragment {
     }
 
     public void addBlankItem() {
+        if (hasBlankItem()) return;
         Log.e("ItemFragment", "Added blank item.");
-        mItemsList.add(Item.blank());
+        mItemsList.add(Item.blank(mContentType == TYPE_FAVORITES_LIST));
+        mAdapter.focusOnNew();
+        mAdapter.notifyDataSetChanged();
+    }
+
+    public void refresh() {
         mAdapter.notifyDataSetChanged();
     }
 
@@ -140,5 +145,7 @@ public class ItemFragment extends Fragment {
     public interface OnListFragmentInteractionListener {
         // TODO: Update argument type and name
         void onListFragmentInteraction(Item item);
+        void onListItemFinalized();
+        void onListItemFavoriteToggled(Item item);
     }
 }
