@@ -122,7 +122,6 @@ public class ItemFragment extends Fragment {
 
     public void addBlankItem() {
         if (hasBlankItem()) return;
-        Log.e("ItemFragment", "Added blank item.");
         mItemsList.add(Item.blank(mContentType == TYPE_FAVORITES_LIST));
         mAdapter.focusOnNew();
         mAdapter.notifyDataSetChanged();

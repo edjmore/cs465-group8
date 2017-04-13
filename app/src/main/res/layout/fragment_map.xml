@@ -2,12 +2,15 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context="proto.group8.cs465.groceryhelper.MapFragment">
 
-    <!-- TODO: Update blank fragment layout -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:text="@string/hello_blank_fragment" />
+
+        <proto.group8.cs465.groceryhelper.view.GMapView
+            android:id="@+id/gmap"
+            app:mapGridSrc="@raw/county_market_grid"
+            app:mapLabelAndColorSrc="@raw/county_market_labels_and_colors"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
 
 </FrameLayout>

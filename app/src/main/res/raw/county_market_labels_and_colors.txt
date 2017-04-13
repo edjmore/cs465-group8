@@ -1,0 +1,4 @@
+d:Dairy:#ff0000ff
+g:Grains:#ffaaaa77
+p:Produce:#ffff0000
+f:Frozen:#ffff00ff

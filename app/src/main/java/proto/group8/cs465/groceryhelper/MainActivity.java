@@ -48,6 +48,8 @@ public class MainActivity extends AppCompatActivity
      */
     private ViewPager mViewPager;
 
+    private boolean favsIsDirty = false, listIsDirty = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -88,7 +90,13 @@ public class MainActivity extends AppCompatActivity
                 // refresh the list pages every time
                 if (position != 2) {
                     ItemFragment listFragment = (ItemFragment) getCurrentFragment();
-                    listFragment.refresh();
+                    if (position == 0 && favsIsDirty) {
+                        listFragment.refresh();
+                        favsIsDirty = false;
+                    } else if (position == 1 && listIsDirty) {
+                        listFragment.refresh();
+                        listIsDirty = false;
+                    }
                 }
             }
 
@@ -201,6 +209,7 @@ public class MainActivity extends AppCompatActivity
             ItemFragment itemFragment = (ItemFragment) currFragment;
             itemFragment.addBlankItem();
         }
+        listIsDirty = true;
     }
 
     @Override
@@ -212,6 +221,7 @@ public class MainActivity extends AppCompatActivity
         } else {
             favoritesList.remove(item);
         }
+        favsIsDirty = true;
     }
 
     @Override
