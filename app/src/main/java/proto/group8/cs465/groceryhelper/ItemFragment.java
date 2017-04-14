@@ -24,8 +24,9 @@ import java.util.List;
  */
 public class ItemFragment extends Fragment {
 
-    public static final int TYPE_LIST = 0x0,
-                            TYPE_FAVORITES_LIST = 0x1;
+    public static final int TYPE_LIST = 0x00,
+                            TYPE_FAVORITES_LIST = 0x01,
+                            TYPE_GMAP_LIST = 0x10;
 
     // TODO: Customize parameter argument names
     private static final String ARG_COLUMN_COUNT = "column-count",
@@ -146,5 +147,6 @@ public class ItemFragment extends Fragment {
         void onListFragmentInteraction(Item item);
         void onListItemFinalized();
         void onListItemFavoriteToggled(Item item);
+        void onListItemChecked(Item item);
     }
 }

@@ -1,15 +1,29 @@
 package proto.group8.cs465.groceryhelper;
 
+import android.animation.TimeInterpolator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
+import android.view.Display;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
+import android.widget.TextView;
 
+import java.util.ArrayList;
+
+import proto.group8.cs465.groceryhelper.model.Item;
 import proto.group8.cs465.groceryhelper.view.GMapView;
 
 
@@ -77,7 +91,15 @@ public class MapFragment extends Fragment implements GMapView.OnGMapSectionClick
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_map, container, false);
+        View v = inflater.inflate(R.layout.fragment_map, container, false);
+
+        RecyclerView rv = (RecyclerView) v.findViewById(R.id.section_list);
+        rv.setLayoutManager(new LinearLayoutManager(getContext()));
+        rv.setAdapter(
+                new MyItemRecyclerViewAdapter(
+                        new ArrayList<Item>(), ItemFragment.TYPE_GMAP_LIST, (ItemFragment.OnListFragmentInteractionListener) getActivity()));
+
+        return v;
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -106,9 +128,29 @@ public class MapFragment extends Fragment implements GMapView.OnGMapSectionClick
 
     @Override
     public void onGMapSectionClicked(char sectionCh, String sectionStr) {
-        Snackbar.make(
-                getActivity().findViewById(R.id.coord_layout), "'" + sectionStr + "' section tapped.", Snackbar.LENGTH_SHORT)
-                .show();
+        final View panel = getActivity().findViewById(R.id.slideup_panel);
+
+        if (sectionStr != null) {
+            // slide the hidden panel up from bottom
+            panel.animate().translationY(dpToPx(28));
+
+            // fill-in panel with section data
+            TextView title = (TextView) panel.findViewById(R.id.text_section_title);
+            title.setText(sectionStr);
+
+            // todo: set the grocery sublist for section to display
+            RecyclerView rv = (RecyclerView) panel.findViewById(R.id.section_list);
+            MyApplication app = (MyApplication) getActivity().getApplication();
+            ((MyItemRecyclerViewAdapter) rv.getAdapter()).setValues(app.getItemsForSection(sectionCh));
+
+        } else {
+            panel.animate().translationY(dpToPx(388)); // offscreen
+        }
+    }
+
+    private float dpToPx(float dp) {
+        DisplayMetrics metric = getContext().getResources().getDisplayMetrics();
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, metric);
     }
 
     /**

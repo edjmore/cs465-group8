@@ -30,7 +30,7 @@ import java.util.List;
  */
 public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecyclerViewAdapter.ViewHolder> {
 
-    private final List<Item> mValues;
+    private List<Item> mValues;
     private int mContentType;
     private final OnListFragmentInteractionListener mListener;
     private boolean mFocusOnNew = false;
@@ -58,7 +58,7 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
 
         // todo: maintain a list of selected items on the favorites screen
         // box is checked if it is in the cart, or is selected during batch edit on the favorites screen
-        boolean isChecked = mContentType == ItemFragment.TYPE_LIST && holder.mItem.isInCart();
+        boolean isChecked = mContentType != ItemFragment.TYPE_FAVORITES_LIST && holder.mItem.isInCart();
         holder.mCheckboxView.setChecked(isChecked);
         holder.mCheckboxView.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
@@ -73,6 +73,8 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
                     holder.mContentView.setPaintFlags(
                             holder.mContentView.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
                 }
+
+                mListener.onListItemChecked(holder.mItem);
             }
         });
 
@@ -112,7 +114,9 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
         }
 
         if (mContentType == ItemFragment.TYPE_FAVORITES_LIST) {
-            holder.mCheckboxView.setVisibility(View.INVISIBLE);
+            holder.mCheckboxView.setVisibility(View.GONE);
+        } else if (mContentType == ItemFragment.TYPE_GMAP_LIST) {
+            holder.mFavIconView.setVisibility(View.GONE);
         }
 
         // setup favorites indicator
@@ -150,6 +154,11 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
                 }
             }
         });
+    }
+
+    public void setValues(List<Item> values) {
+        mValues = values;
+        notifyDataSetChanged();
     }
 
     @Override
@@ -195,7 +204,6 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
             mEditContentView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                 @Override
                 public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                    Log.e("Adapter", v + " " + actionId + " " + event);
                     if (actionId == EditorInfo.IME_NULL || event != null) { // 'enter' key was pressed
 
                         // final name adjustment

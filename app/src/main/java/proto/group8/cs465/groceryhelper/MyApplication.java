@@ -1,8 +1,10 @@
 package proto.group8.cs465.groceryhelper;
 
 import android.app.Application;
+import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import proto.group8.cs465.groceryhelper.model.Item;
@@ -22,5 +24,15 @@ public class MyApplication extends Application {
 
     public List<Item> getFavoriteItemsList() {
         return mFavoriteItemsList;
+    }
+
+    public List<Item> getItemsForSection(char sectionId) {
+        List<Item> res = new ArrayList<>();
+        for (Item item : mItemsList) {
+            if (item.getSectionId() == sectionId) {
+                res.add(item);
+            }
+        }
+        return res;
     }
 }

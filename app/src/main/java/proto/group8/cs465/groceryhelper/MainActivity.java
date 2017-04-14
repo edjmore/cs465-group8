@@ -13,7 +13,9 @@ import android.support.v4.view.MenuItemCompat;
 import android.support.v4.view.ViewGroupCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.SearchView;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -98,6 +100,10 @@ public class MainActivity extends AppCompatActivity
                         listFragment.refresh();
                         listIsDirty = false;
                     }
+                } else {
+                    // hide the slideup panel on map view
+                    View panel = findViewById(R.id.slideup_panel);
+                    if (panel != null) panel.setTranslationY(dpToPx(388));
                 }
             }
 
@@ -131,6 +137,11 @@ public class MainActivity extends AppCompatActivity
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+    }
+
+    private float dpToPx(float dp) {
+        DisplayMetrics metric = getResources().getDisplayMetrics();
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, metric);
     }
 
     @Override
@@ -228,6 +239,11 @@ public class MainActivity extends AppCompatActivity
         String msg = String.format("%s '%s' %s favorites",
                 item.isFavorited() ? "Added" : "Removed", item.getName(), item.isFavorited() ? "to" : "from");
         Snackbar.make(findViewById(R.id.coord_layout), msg, Snackbar.LENGTH_SHORT).show();
+    }
+
+    @Override
+    public void onListItemChecked(Item item) {
+        listIsDirty = true;
     }
 
     @Override

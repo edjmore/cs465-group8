@@ -104,14 +104,15 @@ public class GMapView extends View {
                     float x = 1f * e.getX(ptrId) / getWidth(),
                           y = 1f * e.getY(ptrId) / getHeight();
                     char sectionCh = touchCoordsToSection(x, y);
-                    
-                    if (sectionCh >= 'a' && sectionCh <= 'z') {
-                        String sectionStr = mMapLabels[sectionCh - 'a'];
 
-                        mListener.onGMapSectionClicked(sectionCh, sectionStr);
-                        handled = true;
-                        break;
+                    String sectionStr = null;
+                    if (sectionCh >= 'a' && sectionCh <= 'z') {
+                        sectionStr = mMapLabels[sectionCh - 'a'];
                     }
+
+                    mListener.onGMapSectionClicked(sectionCh, sectionStr);
+                    handled = sectionStr != null;
+                    break;
                 }
             
             default:
@@ -123,8 +124,14 @@ public class GMapView extends View {
     }
 
     private char touchCoordsToSection(float x, float y) {
-        int j = (int) (mMapGrid[0].length * x),
-            i = (int) (mMapGrid.length * y);
+        float cellSize = getCellSize();
+        int i = (int) (y * getHeight() / cellSize),
+            j = (int) (x * getWidth() / cellSize);
+
+        // may go out of bounds
+        if (i >= mMapGrid.length || j >= mMapGrid[0].length || i < 0 || j < 0) {
+            return '?';
+        }
         return mMapGrid[i][j];
     }
 
@@ -140,7 +147,7 @@ public class GMapView extends View {
 
         // calculate the cell size for our grid (matching height)
         final float w = getWidth(), h = getHeight();
-        final float cellSize = h / mMapGrid.length;
+        final float cellSize = getCellSize();
         final float r = cellSize * 0.0f;
 
         // this is a super inefficient way of doing this, but it's just a prototype and I'm lazy
@@ -161,6 +168,10 @@ public class GMapView extends View {
                 canvas.drawRoundRect(mCell, r, r, mPaint);
             }
         }
+    }
+
+    private float getCellSize() {
+        return getHeight() / mMapGrid.length;
     }
 
     private boolean loadMapGrid(int resFileId) {

@@ -1,16 +1,60 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
+    android:id="@+id/gmap_layout"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context="proto.group8.cs465.groceryhelper.MapFragment">
 
 
-        <proto.group8.cs465.groceryhelper.view.GMapView
-            android:id="@+id/gmap"
-            app:mapGridSrc="@raw/county_market_grid"
-            app:mapLabelAndColorSrc="@raw/county_market_labels_and_colors"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+    <proto.group8.cs465.groceryhelper.view.GMapView
+        android:id="@+id/gmap"
+        app:mapGridSrc="@raw/county_market_grid"
+        app:mapLabelAndColorSrc="@raw/county_market_labels_and_colors"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
-</FrameLayout>
+    <android.support.v7.widget.CardView
+        android:layout_alignBottom="@+id/gmap"
+        app:cardElevation="8dp"
+        android:id="@+id/slideup_panel"
+        android:translationY="388dp"
+        app:cardUseCompatPadding="true"
+        android:layout_marginLeft="@dimen/standard_margin"
+        android:layout_marginStart="@dimen/standard_margin"
+        android:layout_marginRight="@dimen/standard_margin"
+        android:layout_marginEnd="@dimen/standard_margin"
+        android:layout_width="match_parent"
+        android:layout_height="400dp">
+
+        <RelativeLayout
+            android:id="@+id/card_layout"
+            android:paddingBottom="16dp"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:textSize="24sp"
+                android:textStyle="normal"
+                android:textAllCaps="true"
+                android:id="@+id/text_section_title"
+                android:text="Section title"
+                android:layout_margin="@dimen/text_margin"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+
+            <android.support.v7.widget.RecyclerView
+                android:id="@+id/section_list"
+                android:layout_marginLeft="@dimen/text_margin"
+                android:layout_marginRight="@dimen/text_margin"
+                android:layout_marginStart="@dimen/text_margin"
+                android:layout_marginEnd="@dimen/text_margin"
+                android:layout_marginBottom="0dp"
+                android:layout_below="@+id/text_section_title"
+                tools:listitem="@layout/fragment_item"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </RelativeLayout>
+    </android.support.v7.widget.CardView>
+
+</RelativeLayout>

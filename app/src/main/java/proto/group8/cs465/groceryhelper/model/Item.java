@@ -9,11 +9,13 @@ public class Item {
     private String mName;
     private boolean mIsFavorited;
     private boolean mIsInCart;
+    private char mSectionId;
 
     public Item(String name, boolean isFavorited, boolean isInCart) {
         mName = name;
         mIsFavorited = isFavorited;
         mIsInCart = isInCart;
+        mSectionId = '?'; // todo: dynamic section ID
     }
 
     public static Item blank(boolean isFavorited) {
@@ -36,8 +38,13 @@ public class Item {
         return mIsInCart;
     }
 
+    public char getSectionId() {
+        return mSectionId;
+    }
+
     public void setName(String name) {
         mName = name;
+        if (name != null && name.length() > 0) mSectionId = name.charAt(0);
     }
 
     public void setIsFavorited(boolean isFavorited) {
