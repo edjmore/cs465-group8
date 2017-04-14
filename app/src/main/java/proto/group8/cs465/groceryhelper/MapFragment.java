@@ -7,13 +7,16 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
+import android.support.v4.view.GestureDetectorCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.Display;
+import android.view.GestureDetector;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.animation.Animation;
@@ -87,12 +90,40 @@ public class MapFragment extends Fragment implements GMapView.OnGMapSectionClick
         gmap.setOnGMapSectionClickedListener(this);
     }
 
+    private class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            if (velocityY > 0) {
+                // hide the panel
+                View panel = getActivity().findViewById(R.id.slideup_panel);
+                panel.animate().translationY(dpToPx(388));
+                return true;
+            }
+            return super.onFling(e1, e2, velocityX, velocityY);
+        }
+    }
+
+    private final GestureDetectorCompat mGestureDetector =
+            new GestureDetectorCompat(getContext(), new MyGestureListener());
+
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         View v = inflater.inflate(R.layout.fragment_map, container, false);
 
+        // hide the panel on swipe down
+        View panel = v.findViewById(R.id.slideup_panel);
+        panel.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                mGestureDetector.onTouchEvent(event);
+                return true;
+            }
+        });
+
+        // setup list view for section items
         RecyclerView rv = (RecyclerView) v.findViewById(R.id.section_list);
         rv.setLayoutManager(new LinearLayoutManager(getContext()));
         rv.setAdapter(

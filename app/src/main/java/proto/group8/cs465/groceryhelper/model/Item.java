@@ -44,7 +44,6 @@ public class Item {
 
     public void setName(String name) {
         mName = name;
-        if (name != null && name.length() > 0) mSectionId = name.charAt(0);
     }
 
     public void setIsFavorited(boolean isFavorited) {
@@ -53,5 +52,9 @@ public class Item {
 
     public void setIsInCart(boolean isInCart) {
         mIsInCart = isInCart;
+    }
+
+    public void setSectionId(char sectionId) {
+        mSectionId = sectionId;
     }
 }

@@ -9,6 +9,7 @@
 
     <proto.group8.cs465.groceryhelper.view.GMapView
         android:id="@+id/gmap"
+        android:layout_margin="@dimen/standard_margin"
         app:mapGridSrc="@raw/county_market_grid"
         app:mapLabelAndColorSrc="@raw/county_market_labels_and_colors"
         android:layout_width="match_parent"
@@ -53,7 +54,7 @@
                 android:layout_below="@+id/text_section_title"
                 tools:listitem="@layout/fragment_item"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" />
+                android:layout_height="wrap_content" />
         </RelativeLayout>
     </android.support.v7.widget.CardView>
 
