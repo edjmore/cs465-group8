@@ -4,6 +4,7 @@ import android.app.SearchManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -222,6 +223,11 @@ public class MainActivity extends AppCompatActivity
             favoritesList.remove(item);
         }
         favsIsDirty = true;
+
+        // show snackbar to re-assure user that something happened
+        String msg = String.format("%s '%s' %s favorites",
+                item.isFavorited() ? "Added" : "Removed", item.getName(), item.isFavorited() ? "to" : "from");
+        Snackbar.make(findViewById(R.id.coord_layout), msg, Snackbar.LENGTH_SHORT).show();
     }
 
     @Override

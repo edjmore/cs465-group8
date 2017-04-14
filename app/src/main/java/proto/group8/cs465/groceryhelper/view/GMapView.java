@@ -9,6 +9,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.View;
 
 import java.io.BufferedReader;
@@ -27,6 +28,10 @@ import proto.group8.cs465.groceryhelper.R;
 
 public class GMapView extends View {
 
+    /* Data for the GMapView is loaded from res files at creation. We have a char grid representing the layout
+     * of the store, with different chars representing blocks for different food items (e.g. dairy). We have a
+     * list of labels mapping the chars to their full names (e.g. d=dairy), and a mapping from char label to
+     * color (e.g. d=#ffff00ff). See the county_market* res/raw files for examples. */
     private char[][] mMapGrid;
     private String[] mMapLabels;
     private int[] mMapColors;
@@ -34,8 +39,11 @@ public class GMapView extends View {
     private boolean mIsMapGridLoaded;
     private boolean mIsLabelsAndColorsLoaded;
 
+    // painting objects (alloc'd once and reused)
     private final Paint mPaint;
     private final RectF mCell;
+
+    private OnGMapSectionClickedListener mListener;
 
     public GMapView(Context context) {
         this(context, null);
@@ -72,6 +80,52 @@ public class GMapView extends View {
         // init all the drawing utils
         mPaint = new Paint();
         mCell = new RectF(0, 0, 0, 0);
+    }
+
+    /* allows implementers to react to clicks on different sections of the GMap */
+    public interface OnGMapSectionClickedListener {
+
+        void onGMapSectionClicked(char sectionCh, String sectionStr);
+    }
+
+    public void setOnGMapSectionClickedListener(OnGMapSectionClickedListener listener) {
+        mListener = listener;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent e) {
+        boolean handled;
+
+        switch (e.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                if (mListener != null) {
+                    // figure out which section was tapped and call the listener interface
+                    int ptrId = e.getPointerId(0);
+                    float x = 1f * e.getX(ptrId) / getWidth(),
+                          y = 1f * e.getY(ptrId) / getHeight();
+                    char sectionCh = touchCoordsToSection(x, y);
+                    
+                    if (sectionCh >= 'a' && sectionCh <= 'z') {
+                        String sectionStr = mMapLabels[sectionCh - 'a'];
+
+                        mListener.onGMapSectionClicked(sectionCh, sectionStr);
+                        handled = true;
+                        break;
+                    }
+                }
+            
+            default:
+                handled = false;
+                break;
+        }
+
+        return handled;
+    }
+
+    private char touchCoordsToSection(float x, float y) {
+        int j = (int) (mMapGrid[0].length * x),
+            i = (int) (mMapGrid.length * y);
+        return mMapGrid[i][j];
     }
 
     @Override
