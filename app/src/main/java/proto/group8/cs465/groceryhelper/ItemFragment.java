@@ -38,6 +38,10 @@ public class ItemFragment extends Fragment {
     private OnListFragmentInteractionListener mListener;
     private MyItemRecyclerViewAdapter mAdapter;
 
+    public MyItemRecyclerViewAdapter getAdapter() {
+        return mAdapter;
+    }
+
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
      * fragment (e.g. upon screen orientation changes).
@@ -63,7 +67,6 @@ public class ItemFragment extends Fragment {
         if (getArguments() != null) {
             mColumnCount = getArguments().getInt(ARG_COLUMN_COUNT);
             mContentType = getArguments().getInt(ARG_CONTENT_TYPE);
-            Log.e("ItemFragement", "count: " + mColumnCount + " type: " + mContentType);
         }
     }
 
@@ -124,8 +127,9 @@ public class ItemFragment extends Fragment {
     public void addBlankItem() {
         if (hasBlankItem()) return;
         mItemsList.add(Item.blank(mContentType == TYPE_FAVORITES_LIST));
+        if (mItemsList.size() > 1) mAdapter.notifyItemChanged(mItemsList.size() - 2); // previously finalized item
+        mAdapter.notifyItemInserted(mItemsList.size() - 1); // new item
         mAdapter.focusOnNew();
-        mAdapter.notifyDataSetChanged();
     }
 
     public void refresh() {

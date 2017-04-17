@@ -73,9 +73,9 @@ public class GMapView extends View {
         }
 
         if (mIsMapGridLoaded) Log.d("GMapView", "Map grid loaded.");
-        else Log.e("GMapView", "Failed to load map grid!");
+        else Log.d("GMapView", "Failed to load map grid!");
         if (mIsLabelsAndColorsLoaded) Log.d("GMapView", "Map labels and colors loaded.");
-        else Log.e("GMapView", "Failed to load map labels and colors!");
+        else Log.d("GMapView", "Failed to load map labels and colors!");
 
         // init all the drawing utils
         mPaint = new Paint();

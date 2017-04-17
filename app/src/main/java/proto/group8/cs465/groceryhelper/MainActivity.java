@@ -51,6 +51,11 @@ public class MainActivity extends AppCompatActivity
      */
     private ViewPager mViewPager;
 
+    private int mCurrentPosition = 0;
+    // track instantiated fragments for easy access
+    private final Fragment[] mActiveFragments = new Fragment[3];
+
+    // flags indicating if we need to refresh a fragment list view
     private boolean favsIsDirty = false, listIsDirty = false;
 
     @Override
@@ -90,8 +95,11 @@ public class MainActivity extends AppCompatActivity
 
             @Override
             public void onPageSelected(int position) {
-                // refresh the list pages every time
+                mCurrentPosition = position;
+
                 if (position != 2) {
+                    // todo: remove all this refreshing, switch to refresh when data
+                    //       is changed (not when affected fragment becomes visible)
                     ItemFragment listFragment = (ItemFragment) getCurrentFragment();
                     if (position == 0 && favsIsDirty) {
                         listFragment.refresh();
@@ -161,7 +169,6 @@ public class MainActivity extends AppCompatActivity
 
         SearchManager searchManager = (SearchManager) getSystemService(SEARCH_SERVICE);
         MenuItem searchItem = menu.findItem(R.id.search);
-        Log.e("MainActivity", "searchItem: " + searchItem);
         SearchView searchView = (SearchView) MenuItemCompat.getActionView(searchItem);
         if (searchView != null) {
             searchView.setSearchableInfo(
@@ -216,12 +223,11 @@ public class MainActivity extends AppCompatActivity
     public void onListItemFinalized() {
         // user has finished editing a new item...
         // ...so we add a new blank item to the bottom of the list
-        Fragment currFragment = getCurrentFragment();
-        if (currFragment instanceof ItemFragment) {
-            ItemFragment itemFragment = (ItemFragment) currFragment;
-            itemFragment.addBlankItem();
+        ItemFragment frag = (ItemFragment) getFragment(0);
+        if (frag != null) {
+            frag.addBlankItem();
         }
-        listIsDirty = true;
+        //listIsDirty = true;
     }
 
     @Override
@@ -230,10 +236,21 @@ public class MainActivity extends AppCompatActivity
         List<Item> favoritesList = ((MyApplication) getApplication()).getFavoriteItemsList();
         if (item.isFavorited()) {
             favoritesList.add(item);
+            int idx = favoritesList.size() - 1;
+
+            // notify new item added
+            ItemFragment frag = (ItemFragment) getFragment(1);
+            if (frag != null) frag.getAdapter().notifyItemInserted(idx);
+
         } else {
+            int idx = favoritesList.indexOf(item);
             favoritesList.remove(item);
+
+            // just need to remove one item from the list fragment
+            ItemFragment frag = (ItemFragment) getFragment(0);
+            if (frag != null) frag.getAdapter().notifyItemRemoved(idx);
         }
-        favsIsDirty = true;
+        //favsIsDirty = true;
 
         // show snackbar to re-assure user that something happened
         String msg = String.format("%s '%s' %s favorites",
@@ -256,6 +273,10 @@ public class MainActivity extends AppCompatActivity
                 .findFragmentByTag("android:switcher:" + R.id.container + ":" + mViewPager.getCurrentItem());
     }
 
+    private Fragment getFragment(int position) {
+        return mActiveFragments[position];
+    }
+
     /**
      * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
      * one of the sections/tabs/pages.
@@ -269,15 +290,36 @@ public class MainActivity extends AppCompatActivity
         @Override
         public Fragment getItem(int position) {
             // getItem is called to instantiate the fragment for the given page.
+            Fragment newFrag;
             switch (position) {
                 case 0:
-                    return ItemFragment.newInstance(1, ItemFragment.TYPE_FAVORITES_LIST);
+                    newFrag =  ItemFragment.newInstance(1, ItemFragment.TYPE_FAVORITES_LIST);
+                    break;
                 case 1:
-                    return ItemFragment.newInstance(1, ItemFragment.TYPE_LIST);
+                    newFrag =  ItemFragment.newInstance(1, ItemFragment.TYPE_LIST);
+                    break;
                 case 2:
                 default:
-                    return MapFragment.newInstance("Map", "Fragment");
+                    newFrag = MapFragment.newInstance("Map", "Fragment");
             }
+            // keep reference to fragment
+            if (position >= 0 && position < mActiveFragments.length) mActiveFragments[position] = newFrag;
+            return newFrag;
+        }
+
+        @Override
+        public Object instantiateItem(ViewGroup container, int position) {
+            // I think this is only called in orientation change, but it's implemented just in case
+            Fragment oldFrag = (Fragment) super.instantiateItem(container, position);
+            mActiveFragments[position] = oldFrag;
+            return oldFrag;
+        }
+
+        @Override
+        public void destroyItem(ViewGroup container, int position, Object object) {
+            super.destroyItem(container, position, object);
+            // remove reference so the GC can free memory
+            mActiveFragments[position] = null;
         }
 
         @Override

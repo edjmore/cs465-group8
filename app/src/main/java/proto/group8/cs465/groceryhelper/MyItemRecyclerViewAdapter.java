@@ -79,7 +79,7 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
         });
 
         // show edit text if this is the last item, otherwise show immutable text view
-        boolean isEditable = position == getItemCount() - 1 && mContentType == ItemFragment.TYPE_LIST;
+        boolean isEditable = position == getItemCount() - 1 && mContentType == ItemFragment.TYPE_LIST && holder.mItem.isBlank();
         holder.mContentView.setVisibility(isEditable ? View.GONE : View.VISIBLE);
         holder.mEditContentView.setVisibility(isEditable ? View.VISIBLE : View.GONE);
 
@@ -89,6 +89,7 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
             holder.mCheckboxView.setVisibility(View.INVISIBLE);
             holder.mFavIconView.setVisibility(View.INVISIBLE);
 
+            // todo: keyboard doesn't pop up as expected
             // focus on edit text (keyboard input)
             if (mFocusOnNew) {
                 holder.mEditContentView.requestFocus();
