@@ -127,8 +127,8 @@ public class ItemFragment extends Fragment {
     public void addBlankItem() {
         if (hasBlankItem()) return;
         mItemsList.add(Item.blank(mContentType == TYPE_FAVORITES_LIST));
-        if (mItemsList.size() > 1) mAdapter.notifyItemChanged(mItemsList.size() - 2); // previously finalized item
-        mAdapter.notifyItemInserted(mItemsList.size() - 1); // new item
+        //if (mItemsList.size() > 1) mAdapter.notifyItemChanged(mItemsList.size() - 1); // previously finalized item
+        mAdapter.notifyDataSetChanged(); // new item
         mAdapter.focusOnNew();
     }
 

@@ -3,6 +3,7 @@ package proto.group8.cs465.groceryhelper;
 import android.app.SearchManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
@@ -57,6 +58,8 @@ public class MainActivity extends AppCompatActivity
 
     // flags indicating if we need to refresh a fragment list view
     private boolean favsIsDirty = false, listIsDirty = false;
+
+    private final Handler mHandler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -127,13 +130,7 @@ public class MainActivity extends AppCompatActivity
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Fragment currFragment = getCurrentFragment();
-                if (currFragment instanceof ItemFragment && mViewPager.getCurrentItem() == 1) {
-                    ItemFragment itemFragment = (ItemFragment) currFragment;
-                    if (!itemFragment.hasBlankItem()) {
-                        itemFragment.addBlankItem();
-                    }
-                }
+                onListItemFinalized();
             }
         });
 
@@ -221,11 +218,17 @@ public class MainActivity extends AppCompatActivity
 
     @Override
     public void onListItemFinalized() {
+        Log.e("MainActivity", String.format("List item finalized"));
         // user has finished editing a new item...
         // ...so we add a new blank item to the bottom of the list
-        ItemFragment frag = (ItemFragment) getFragment(0);
+        final ItemFragment frag = (ItemFragment) getFragment(1);
         if (frag != null) {
-            frag.addBlankItem();
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    frag.addBlankItem();
+                }
+            });
         }
         //listIsDirty = true;
     }
@@ -233,22 +236,50 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onListItemFavoriteToggled(Item item) {
         // update the favorites list
-        List<Item> favoritesList = ((MyApplication) getApplication()).getFavoriteItemsList();
+        List<Item> favoritesList = ((MyApplication) getApplication()).getFavoriteItemsList(),
+                    itemsList = ((MyApplication) getApplication()).getItemsList();
         if (item.isFavorited()) {
             favoritesList.add(item);
-            int idx = favoritesList.size() - 1;
+            final int idx = favoritesList.size() - 1;
 
             // notify new item added
-            ItemFragment frag = (ItemFragment) getFragment(1);
-            if (frag != null) frag.getAdapter().notifyItemInserted(idx);
+            final ItemFragment frag = (ItemFragment) getFragment(0);
+            if (frag != null) {
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        frag.getAdapter().notifyDataSetChanged();
+                        Log.e("MainActivity", String.format("Item inserted at idx: %d", idx));
+                    }
+                });
+            }
 
         } else {
-            int idx = favoritesList.indexOf(item);
+            final int favIdx = favoritesList.indexOf(item),
+                        listIdx = itemsList.indexOf(item);
             favoritesList.remove(item);
 
-            // just need to remove one item from the list fragment
-            ItemFragment frag = (ItemFragment) getFragment(0);
-            if (frag != null) frag.getAdapter().notifyItemRemoved(idx);
+            // just need to remove one item from the favorites fragment, and update the item in the list fragment
+            final ItemFragment favFrag = (ItemFragment) getFragment(0),
+                                listFrag = (ItemFragment) getFragment(1);
+            if (favFrag != null) {
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        favFrag.getAdapter().notifyItemRemoved(favIdx);
+                        Log.e("MainActivity", String.format("Item removed at idx: %d", favIdx));
+                    }
+                });
+            }
+            if (listFrag != null) {
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        listFrag.getAdapter().notifyItemChanged(listIdx);
+                        Log.e("MainActivity", String.format("Item updated at idx: %d", listIdx));
+                    }
+                });
+            }
         }
         //favsIsDirty = true;
 
@@ -259,8 +290,25 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public void onListItemChecked(Item item) {
-        listIsDirty = true;
+    public void onListItemChecked(final Item item) {
+        Log.e("MainActivity", "Item checked!!");
+        final ItemFragment frag = (ItemFragment) getFragment(1);
+        if (frag != null && frag != getCurrentFragment()) {
+            MyApplication app = (MyApplication) getApplication();
+            final int idx = app.getItemsList().indexOf(item);
+            mHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    frag.getAdapter().notifyItemChanged(idx);
+                    Log.e("MainActivity", String.format("Item checked at idx: %d", idx));
+                }
+            });
+        }
+        Snackbar.make(findViewById(R.id.coord_layout),
+                String.format("%s '%s' %s shopping cart",
+                        item.isInCart() ? "Added" : "Removed", item.getName(), item.isInCart() ? "to" : "from"),
+                Snackbar.LENGTH_SHORT).show();
+        //listIsDirty = true;
     }
 
     @Override

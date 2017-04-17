@@ -60,7 +60,26 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
         // box is checked if it is in the cart, or is selected during batch edit on the favorites screen
         boolean isChecked = mContentType != ItemFragment.TYPE_FAVORITES_LIST && holder.mItem.isInCart();
         holder.mCheckboxView.setChecked(isChecked);
-        holder.mCheckboxView.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        holder.mCheckboxView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                boolean isChecked = ((CheckBox) v).isChecked();
+
+                holder.mItem.setIsInCart(isChecked);
+
+                // strikethrough text if checked
+                if (isChecked) {
+                    holder.mContentView.setPaintFlags(
+                            holder.mContentView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
+                } else {
+                    holder.mContentView.setPaintFlags(
+                            holder.mContentView.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
+                }
+
+                mListener.onListItemChecked(holder.mItem);
+            }
+        });
+        /*holder.mCheckboxView.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 holder.mItem.setIsInCart(isChecked);
@@ -76,7 +95,7 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
 
                 mListener.onListItemChecked(holder.mItem);
             }
-        });
+        });*/
 
         // show edit text if this is the last item, otherwise show immutable text view
         boolean isEditable = position == getItemCount() - 1 && mContentType == ItemFragment.TYPE_LIST && holder.mItem.isBlank();
