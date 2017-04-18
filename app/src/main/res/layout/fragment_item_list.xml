@@ -9,6 +9,8 @@
     android:layout_marginLeft="@dimen/activity_horizontal_margin"
     android:layout_marginRight="@dimen/activity_horizontal_margin"
     android:layout_marginTop="@dimen/activity_vertical_margin"
+    android:paddingBottom="96dp"
+    android:clipToPadding="false"
     android:layout_marginBottom="@dimen/activity_vertical_margin"
     app:layoutManager="LinearLayoutManager"
     tools:context="proto.group8.cs465.groceryhelper.ItemFragment"

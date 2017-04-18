@@ -28,7 +28,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
 
+import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 
 import proto.group8.cs465.groceryhelper.model.Item;
 
@@ -60,6 +62,8 @@ public class MainActivity extends AppCompatActivity
     private boolean favsIsDirty = false, listIsDirty = false;
 
     private final Handler mHandler = new Handler();
+
+    private boolean mIsInEditMode = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -101,21 +105,24 @@ public class MainActivity extends AppCompatActivity
                 mCurrentPosition = position;
 
                 if (position != 2) {
-                    // todo: remove all this refreshing, switch to refresh when data
-                    //       is changed (not when affected fragment becomes visible)
-                    ItemFragment listFragment = (ItemFragment) getCurrentFragment();
-                    if (position == 0 && favsIsDirty) {
-                        listFragment.refresh();
-                        favsIsDirty = false;
-                    } else if (position == 1 && listIsDirty) {
-                        listFragment.refresh();
-                        listIsDirty = false;
-                    }
-                } else {
                     // hide the slideup panel on map view
                     View panel = findViewById(R.id.slideup_panel);
-                    if (panel != null) panel.setTranslationY(dpToPx(388));
+                    if (panel != null) panel.setTranslationY(dpToPx(396));
                 }
+
+                // disengage edit mode for any previous fragments we were just in
+                for (int i = 0; i < 2; i++) {
+                    if (i == position) continue; // skip current
+
+                    ItemFragment frag = (ItemFragment) getFragment(i);
+                    if (frag != null) {
+                        frag.getAdapter().disengageEditMode();
+                    }
+                }
+
+                // update menu
+                mIsInEditMode = false;
+                invalidateOptionsMenu();
             }
 
             @Override
@@ -177,11 +184,112 @@ public class MainActivity extends AppCompatActivity
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        // options menu items are context dependent
+        menu.findItem(R.id.search).setVisible(!mIsInEditMode);
+        menu.findItem(R.id.cancel).setVisible(mIsInEditMode);
+        menu.findItem(R.id.delete).setVisible(mIsInEditMode && mCurrentPosition == 1);
+        menu.findItem(R.id.transfer).setVisible(mIsInEditMode && mCurrentPosition == 0);
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(final MenuItem item) {
         int id = item.getItemId();
+        final ItemFragment frag = mIsInEditMode && getCurrentFragment() instanceof ItemFragment ?
+                (ItemFragment) getCurrentFragment() : null;
+
+        switch (id) {
+            case R.id.cancel:
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mIsInEditMode = false;
+                        invalidateOptionsMenu();
+                        if (frag != null) frag.getAdapter().disengageEditMode();
+                    }
+                });
+                return true;
+
+            case R.id.delete:
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        // delete all selected items
+                        if (frag != null) {
+                            MyItemRecyclerViewAdapter adapter = frag.getAdapter();
+                            if (!adapter.getSelectedItems().isEmpty()) {
+                                int removeCount = adapter.getSelectedItems().size();
+
+                                Iterator<Item> iter = adapter.getSelectedItems().iterator();
+                                while (iter.hasNext()) {
+                                    Item toRemove = iter.next();
+                                    int idx = adapter.getValues().indexOf(toRemove);
+
+                                    toRemove.setIsInCart(false); // impossible now (might still be in favorites)
+
+                                    iter.remove();                        // remove from selected set
+                                    adapter.getValues().remove(toRemove); // remove from global list
+                                    adapter.notifyItemRemoved(idx);       // remove from UI
+                                }
+
+                                adapter.disengageEditMode();
+                                Snackbar.make(findViewById(R.id.coord_layout),
+                                        String.format(Locale.US, "Deleted %d item(s)", removeCount), Snackbar.LENGTH_SHORT).show();
+                            }
+                        }
+                    }
+                });
+                return true;
+
+            case R.id.transfer:
+                mHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        // transfer selected items to shopping cart
+                        if (frag != null) {
+                            MyItemRecyclerViewAdapter adapter = frag.getAdapter();
+                            if (!adapter.getSelectedItems().isEmpty()) {
+                                int xferCount = adapter.getSelectedItems().size();
+
+                                List<Item> itemsList = ((MyApplication) getApplication()).getItemsList();
+
+                                Iterator<Item> iter = adapter.getSelectedItems().iterator();
+                                while (iter.hasNext()) {
+                                    Item toAdd = iter.next();
+                                    int idx = adapter.getValues().indexOf(toAdd);
+
+                                    // add to shopping list (if necessary)
+                                    if (!itemsList.contains(toAdd)) {
+                                        itemsList.add(Math.max(itemsList.size() - 1, 0), toAdd); // before editable item
+                                    } else {
+                                        xferCount--;
+                                    }
+
+                                    iter.remove();                  // remove from selected set
+                                    adapter.notifyItemChanged(idx); // deselect in UI
+                                }
+
+                                adapter.disengageEditMode();
+                                if (xferCount > 0) {
+                                    // need to refresh UI in shopping list w/ new items
+                                    ItemFragment listFrag = (ItemFragment) getFragment(1);
+                                    listFrag.getAdapter()
+                                            .notifyItemRangeChanged(itemsList.size() - xferCount - 1, xferCount + 1);
+
+                                    Snackbar.make(findViewById(R.id.coord_layout),
+                                            String.format(Locale.US, "Transferred %d new item(s) to shopping cart", xferCount), Snackbar.LENGTH_SHORT).show();
+                                } else {
+                                    // no items were transferred (already in list)
+                                    Snackbar.make(findViewById(R.id.coord_layout),
+                                            "Selected item(s) already in shopping cart!", Snackbar.LENGTH_SHORT).show();
+                                }
+                            }
+                        }
+                    }
+                });
+                return true;
+        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -314,6 +422,39 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onFragmentInteraction(Uri uri) {
 
+    }
+
+    @Override
+    public void onListItemLongClicked(Item item, MyItemRecyclerViewAdapter adapter) {
+        if (mCurrentPosition == 2) return; // don't care in the map
+
+        if (adapter.isInEditMode()) {
+            // already in edit mode, treat like a regular click
+            onListItemClicked(item, adapter);
+        } else {
+            // engage edit mode and select this item
+            adapter.engageEditMode();
+            adapter.toggleSelection(item);
+
+            mIsInEditMode = true;
+            invalidateOptionsMenu();
+        }
+    }
+
+    @Override
+    public void onListItemClicked(Item item, MyItemRecyclerViewAdapter adapter) {
+        // toggle selection if in edit mode
+        if (adapter.isInEditMode()) {
+            boolean allItemsDeselected = adapter.toggleSelection(item);
+
+            if (allItemsDeselected) {
+                // time to disengage edit mode
+                adapter.disengageEditMode();
+
+                mIsInEditMode = false;
+                invalidateOptionsMenu();
+            }
+        }
     }
 
     private Fragment getCurrentFragment() {

@@ -21,7 +21,9 @@ import android.widget.TextView;
 import proto.group8.cs465.groceryhelper.ItemFragment.OnListFragmentInteractionListener;
 import proto.group8.cs465.groceryhelper.model.Item;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * {@link RecyclerView.Adapter} that can display a {@link Item} and makes a call to the
@@ -34,6 +36,9 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
     private int mContentType;
     private final OnListFragmentInteractionListener mListener;
     private boolean mFocusOnNew = false;
+
+    private boolean mIsInEditMode = false;
+    private Set<Item> mSelectedItems = new HashSet<>();
 
     public MyItemRecyclerViewAdapter(List<Item> items, int contentType, OnListFragmentInteractionListener listener) {
         mValues = items;
@@ -79,23 +84,6 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
                 mListener.onListItemChecked(holder.mItem);
             }
         });
-        /*holder.mCheckboxView.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                holder.mItem.setIsInCart(isChecked);
-
-                // strikethrough text if checked
-                if (isChecked) {
-                    holder.mContentView.setPaintFlags(
-                            holder.mContentView.getPaintFlags() | Paint.STRIKE_THRU_TEXT_FLAG);
-                } else {
-                    holder.mContentView.setPaintFlags(
-                            holder.mContentView.getPaintFlags() & ~Paint.STRIKE_THRU_TEXT_FLAG);
-                }
-
-                mListener.onListItemChecked(holder.mItem);
-            }
-        });*/
 
         // show edit text if this is the last item, otherwise show immutable text view
         boolean isEditable = position == getItemCount() - 1 && mContentType == ItemFragment.TYPE_LIST && holder.mItem.isBlank();
@@ -164,21 +152,95 @@ public class MyItemRecyclerViewAdapter extends RecyclerView.Adapter<MyItemRecycl
             }
         });
 
+        holder.mView.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                Log.e("Adapter", "Long click on item: " + holder.mItem.getName());
+                mListener.onListItemLongClicked(holder.mItem, getSelf());
+                return true;
+            }
+        });
+
         holder.mView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (null != mListener) {
-                    // Notify the active callbacks interface (the activity, if the
-                    // fragment is attached to one) that an item has been selected.
-                    mListener.onListFragmentInteraction(holder.mItem);
-                }
+                Log.e("Adapter", "Click on item: " + holder.mItem.getName());
+                mListener.onListItemClicked(holder.mItem, getSelf());
             }
         });
+
+        // view will use dark background to indicate selection
+        boolean useDarkBackground = mSelectedItems.contains(holder.mItem);
+        int colorResId = useDarkBackground ? R.color.colorSelectedListItemBg : R.color.colorListItemBg;
+        holder.mView.setBackgroundResource(colorResId);
+    }
+
+    private MyItemRecyclerViewAdapter getSelf() {
+        return this;
+    }
+
+    public boolean isInEditMode() {
+        return mIsInEditMode;
+    }
+
+    public void engageEditMode() {
+        if (mIsInEditMode) return;
+
+        // engage edit mode
+        mIsInEditMode = true;
+    }
+
+    public void disengageEditMode() {
+        if (!mIsInEditMode) return;
+
+        // disengage edit mode
+        mIsInEditMode = false;
+
+        // clear the selected set and update UI if necessary
+        if (!mSelectedItems.isEmpty()) {
+            int[] idxs = new int[mSelectedItems.size()];
+            int i = 0;
+
+            for (Item item : mSelectedItems) {
+                idxs[i++] = mValues.indexOf(item);
+            }
+
+            mSelectedItems.clear();
+            for (int idx : idxs) {
+                notifyItemChanged(idx);
+            }
+        }
+    }
+
+    /* returns true iff there are no more selected items after this toggle */
+    public boolean toggleSelection(Item item) {
+        boolean isSelected = mSelectedItems.contains(item);
+        if (isSelected) {
+            // deselect
+            mSelectedItems.remove(item);
+        } else {
+            // select
+            mSelectedItems.add(item);
+        }
+
+        // update UI
+        int idx = mValues.indexOf(item);
+        notifyItemChanged(idx);
+
+        return mSelectedItems.isEmpty();
+    }
+
+    public Set<Item> getSelectedItems() {
+        return mSelectedItems;
     }
 
     public void setValues(List<Item> values) {
         mValues = values;
         notifyDataSetChanged();
+    }
+
+    public List<Item> getValues() {
+        return mValues;
     }
 
     @Override

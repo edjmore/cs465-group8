@@ -138,7 +138,7 @@ public class GMapView extends View {
     @Override
     protected void onDraw(final Canvas canvas) {
         super.onDraw(canvas);
-        canvas.drawColor(0xffffffff); // clear canvas
+        canvas.drawColor(0xFAFAFA); // clear canvas
 
         // if anything is invalid we skip drawing
         if (!mIsMapGridLoaded || !mIsLabelsAndColorsLoaded) {

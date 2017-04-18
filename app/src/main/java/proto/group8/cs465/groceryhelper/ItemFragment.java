@@ -96,6 +96,7 @@ public class ItemFragment extends Fragment {
                     break;
             }
             recyclerView.setAdapter(mAdapter = new MyItemRecyclerViewAdapter(mItemsList, mContentType, mListener));
+            if (mContentType == TYPE_LIST) addBlankItem();
         }
         return view;
     }
@@ -152,5 +153,7 @@ public class ItemFragment extends Fragment {
         void onListItemFinalized();
         void onListItemFavoriteToggled(Item item);
         void onListItemChecked(Item item);
+        void onListItemLongClicked(Item item, MyItemRecyclerViewAdapter adapter);
+        void onListItemClicked(Item item, MyItemRecyclerViewAdapter adapter);
     }
 }
