@@ -3,6 +3,7 @@ package proto.group8.cs465.groceryhelper;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.DividerItemDecoration;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -95,6 +96,12 @@ public class ItemFragment extends Fragment {
                     mItemsList = ((MyApplication) getActivity().getApplication()).getItemsList();
                     break;
             }
+
+            // show dividers between list items
+            //DividerItemDecoration div = new DividerItemDecoration(recyclerView.getContext(),
+            //        DividerItemDecoration.VERTICAL);
+            //recyclerView.addItemDecoration(div);
+
             recyclerView.setAdapter(mAdapter = new MyItemRecyclerViewAdapter(mItemsList, mContentType, mListener));
             if (mContentType == TYPE_LIST) addBlankItem();
         }

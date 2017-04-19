@@ -9,6 +9,7 @@ import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -18,7 +19,10 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
+import java.util.Stack;
 
 import proto.group8.cs465.groceryhelper.R;
 
@@ -38,6 +42,9 @@ public class GMapView extends View {
 
     private boolean mIsMapGridLoaded;
     private boolean mIsLabelsAndColorsLoaded;
+
+    private List<Coord> mShoppingRoute;
+    private float[] mShoppingRouteDrawCoords;
 
     // painting objects (alloc'd once and reused)
     private final Paint mPaint;
@@ -168,6 +175,21 @@ public class GMapView extends View {
                 canvas.drawRoundRect(mCell, r, r, mPaint);
             }
         }
+
+        if (mShoppingRoute.size() < 4) return;
+
+        // draw the shopping route
+        mPaint.setStrokeWidth(4);
+        int idx = 0;
+        for (Coord coord : mShoppingRoute) {
+            mShoppingRouteDrawCoords[idx++] = cellSize / 2 + coord.x * cellSize;
+            mShoppingRouteDrawCoords[idx++] = cellSize / 2 + coord.y * cellSize;
+        }
+        mPaint.setColor(0xffff0000);
+        for (int i = 0; i < mShoppingRouteDrawCoords.length - 2; i += 2) {
+            canvas.drawLine(mShoppingRouteDrawCoords[i], mShoppingRouteDrawCoords[i+1],
+                    mShoppingRouteDrawCoords[i+2], mShoppingRouteDrawCoords[i+3], mPaint);
+        }
     }
 
     private float getCellSize() {
@@ -221,8 +243,56 @@ public class GMapView extends View {
             e.printStackTrace();
         }
 
-        if (ok) mMapGrid = newMapGrid;
+        if (ok) {
+            mMapGrid = newMapGrid;
+            loadShoppingRoute(newMapGrid.clone());
+        }
         return ok;
+    }
+
+    private void loadShoppingRoute(char[][] mapGrid) {
+        mShoppingRoute = new LinkedList<>();
+
+        // find the start point
+        int w = mapGrid[0].length, h = mapGrid.length;
+        for (int i = 0; i < h; i++) {
+            for (int j = 0; j < w; j++) {
+                char ch = mapGrid[i][j];
+                if (ch == '<') {
+                    mShoppingRoute.add(new Coord(j, i));
+                    mapGrid[i][j] = '-';
+                }
+            }
+        }
+
+        char ch = 0;
+        int count = 0;
+        do {
+            ch = 0;
+            Coord last = mShoppingRoute.get(mShoppingRoute.size() - 1);
+
+            // loop thru neighbors
+            for (int x = Math.max(0, last.x - 1); x <= Math.min(w - 1, last.x + 1) && ch == 0; x++) {
+                for (int y = Math.max(0, last.y - 1); y <= Math.min(h - 1, last.y + 1); y++) {
+                    if ((x - last.x) * (y - last.y) != 0 || (x == last.x && y == last.y)) continue;
+
+                    ch = mapGrid[y][x];
+                    if (ch == '+' || ch == '>') {
+
+                        // this is the next coord
+                        mShoppingRoute.add(new Coord(x, y));
+                        mapGrid[y][x] = '-';
+                        break;
+
+                    } else {
+                        ch = 0;
+                    }
+                }
+            }
+            //Log.e("GMapView", ch + " " + last.x + " " + last.y);
+        } while (ch != '>' && ++ count < 100);
+
+        mShoppingRouteDrawCoords = new float[(mShoppingRoute.size() - 0) * 2];
     }
 
     private boolean loadMapLabelsAndColors(int resFileId) {
@@ -258,5 +328,14 @@ public class GMapView extends View {
             mMapColors = mapColors;
         }
         return ok;
+    }
+
+    static class Coord {
+        final int x, y;
+
+        Coord(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
     }
 }
